@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>InvoiceIQ · AP Control Center</title>
+<style>
+:root{--bg:#0b1020;--panel:#121a2d;--panel2:#172238;--line:#273650;--text:#edf3ff;--muted:#91a1bb;--blue:#73a7ff;--green:#43d6a1;--red:#ff7777;--amber:#f4c66a}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top left,#172746 0,#0b1020 45%);color:var(--text);font:14px/1.5 Inter,system-ui,Segoe UI,sans-serif}
+.wrap{max-width:1180px;margin:auto;padding:28px 22px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:26px}.brand{font-size:22px;font-weight:800;letter-spacing:-.7px}.brand span{color:var(--blue)}.tag{color:var(--muted);font-size:12px;border:1px solid var(--line);padding:6px 10px;border-radius:20px}
+h1{font-size:30px;margin:0 0 5px;letter-spacing:-1px}h2{font-size:16px;margin:0 0 15px}.sub{color:var(--muted);margin-bottom:24px}
+.grid{display:grid;grid-template-columns:1.05fr .95fr;gap:18px}.panel{background:linear-gradient(145deg,#141f34,#10182a);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 12px 32px #0002}.upload{display:grid;gap:12px}.file{border:1px dashed #405575;padding:13px;border-radius:10px;background:#0d1628}.file label{display:block;color:#cbd8ed;font-weight:650;margin-bottom:6px}.file input{width:100%;color:var(--muted);font-size:12px}
+button{background:var(--blue);color:#071225;border:0;padding:11px 16px;border-radius:9px;font-weight:750;cursor:pointer}button:disabled{opacity:.5;cursor:wait}.secondary{background:#233451;color:#dbe8ff}.samplebar{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.samplebar button{font-size:12px;padding:8px 10px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}.kpi{background:#111b2e;border:1px solid var(--line);border-radius:12px;padding:14px}.kpi small{color:var(--muted)}.kpi strong{display:block;font-size:24px;margin-top:4px}
+.stage{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid #24324a}.dot{width:9px;height:9px;border-radius:50%;background:var(--green);margin-top:6px;flex-shrink:0}.stage.failed .dot{background:var(--red)}.stage b{display:block}.stage small{color:var(--muted)}
+.badge{display:inline-block;border-radius:30px;padding:5px 10px;font-size:11px;font-weight:800;letter-spacing:.5px}.MATCHED{background:#123e36;color:#65e5b8}.FLAGGED,.NEEDS_REVIEW{background:#493719;color:#ffd27a}.FAILED{background:#4a2028;color:#ff9c9c}
+table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;padding:10px;border-bottom:1px solid #26344b}th{color:var(--muted);font-weight:600}td{color:#d9e5f8}.pass{color:var(--green)}.fail,.review{color:var(--amber)}
+#result{margin-top:18px}.hidden{display:none}.muted{color:var(--muted)}.history{margin-top:18px}.rowtitle{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+@media(max-width:800px){.grid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}h1{font-size:24px}}
+</style></head><body><div class="wrap">
+<div class="top"><div class="brand">◈ Invoice<span>IQ</span></div><div class="tag">FINANCE OPERATIONS · LIVE WORKFLOW</div></div>
+<h1>Invoice control center</h1><div class="sub">Three-way matching that turns supplier PDFs into explainable review decisions.</div>
+<div class="kpis"><div class="kpi"><small>Total runs</small><strong id="kRuns">—</strong></div><div class="kpi"><small>Matched</small><strong id="kMatched">—</strong></div><div class="kpi"><small>Flagged</small><strong id="kFlagged">—</strong></div><div class="kpi"><small>Needs attention</small><strong id="kAttention">—</strong></div></div>
+<div class="grid">
+<section class="panel"><h2>① Submit documents</h2><div class="muted" style="margin:-8px 0 14px">Upload one invoice, its purchase order and goods receipt note. PDF only · 15 MB total.</div>
+<form id="form" class="upload">
+<div class="file"><label>Supplier invoice</label><input type="file" name="invoice" accept="application/pdf" required></div>
+<div class="file"><label>Purchase order (PO)</label><input type="file" name="po" accept="application/pdf" required></div>
+<div class="file"><label>Goods receipt note (GRN)</label><input type="file" name="grn" accept="application/pdf" required></div>
+<button id="submit">Run three-way match →</button></form>
+<div class="samplebar"><button class="secondary" onclick="sample('happy')">Try happy path</button><button class="secondary" onclick="sample('quantity')">Quantity edge case</button><button class="secondary" onclick="sample('duplicate')">Duplicate edge case</button><button class="secondary" onclick="sample('math')">Math edge case</button></div>
+</section>
+<section class="panel"><div class="rowtitle"><h2>② Live execution</h2><span class="muted" id="runState">Idle</span></div><div id="stages" class="muted">Upload documents or select a sample to see each processing stage.</div></section>
+</div>
+<section id="result" class="panel hidden"><div class="rowtitle"><h2>③ Decision & evidence</h2><span id="decision"></span></div><div id="summary" class="sub"></div><div style="overflow:auto"><table><thead><tr><th>Control</th><th>Status</th><th>Evidence / calculation</th></tr></thead><tbody id="checks"></tbody></table></div><div id="meta" class="muted" style="margin-top:12px"></div></section>
+<section class="panel history"><div class="rowtitle"><h2>④ Run history</h2><button class="secondary" onclick="refresh()">Refresh</button></div><div style="overflow:auto"><table><thead><tr><th>Run ID</th><th>Time</th><th>Invoice</th><th>Supplier</th><th>Decision</th><th>Total</th></tr></thead><tbody id="history"></tbody></table></div></section>
+<div class="muted" style="text-align:center;margin:22px 0">InvoiceIQ · Human-in-the-loop AP control · Demo data is synthetic</div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+function stageView(stages){$("stages").innerHTML=stages.map(s=>`<div class="stage ${s.status==='failed'?'failed':''}"><i class="dot"></i><div><b>${esc(s.stage)}</b><small>${esc(s.detail)}</small></div></div>`).join("");}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function showResult(r){$("result").classList.remove("hidden");$("decision").innerHTML=`<span class="badge ${r.decision}">${r.decision}</span>`;$("summary").textContent=r.summary;
+$("checks").innerHTML=(r.checks||[]).map(c=>`<tr><td>${esc(c.name)}</td><td class="${c.status.toLowerCase()}">${c.status}</td><td>${esc(c.message)}</td></tr>`).join("");
+$("meta").textContent=`Invoice ${r.invoice_number||"—"} · PO ${r.po_number||"—"} · Total ₹${r.invoice_total||"—"} · Run ${r.run_id||"—"}`;}
+async function submitForm(fd){$("submit").disabled=true;$("runState").textContent="Processing…";$("stages").innerHTML="";$("result").classList.add("hidden");
+try{let res=await fetch("/api/process",{method:"POST",body:fd});let data=await res.json();if(data.result){stageView(data.result.stages||[]);showResult(data.result);}else throw Error(data.error||"Processing failed");$("runState").textContent=data.status;await refresh();}
+catch(e){$("runState").textContent="Failed";$("stages").textContent=e.message;}finally{$("submit").disabled=false;}}
+$("form").addEventListener("submit",e=>{e.preventDefault();submitForm(new FormData(e.target));});
+async function sample(which){$("submit").disabled=true;$("runState").textContent="Running sample…";$("stages").innerHTML="";
+try{let res=await fetch("/api/process-sample/"+which,{method:"POST"});let d=await res.json();if(!d.result)throw Error(d.error||"Sample failed");stageView(d.result.stages||[]);showResult(d.result);$("runState").textContent=d.status;await refresh();}
+catch(e){$("runState").textContent="Failed";$("stages").textContent=e.message;}finally{$("submit").disabled=false;}}
+async function refresh(){let rows=await fetch("/api/runs").then(r=>r.json());$("kRuns").textContent=rows.length;$("kMatched").textContent=rows.filter(x=>x.decision==="MATCHED").length;$("kFlagged").textContent=rows.filter(x=>x.decision==="FLAGGED").length;$("kAttention").textContent=rows.filter(x=>x.status==="FAILED"||x.decision==="NEEDS_REVIEW").length;
+$("history").innerHTML=rows.map(x=>`<tr><td>${esc(x.id)}</td><td>${new Date(x.created_at).toLocaleString()}</td><td>${esc(x.invoice_number||"—")}</td><td>${esc(x.supplier||"—")}</td><td>${x.decision?`<span class="badge ${x.decision}">${x.decision}</span>`:"—"}</td><td>${x.total?"₹"+esc(x.total):"—"}</td></tr>`).join("")||'<tr><td colspan="6" class="muted">No runs yet. Process a sample to populate history.</td></tr>';}
+refresh();
+</script></body></html>
